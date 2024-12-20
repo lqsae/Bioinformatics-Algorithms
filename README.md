@@ -36,7 +36,7 @@ Needleman-Wunsch算法
 
 ##### 代码实现
 
-```
+```python
 def needleman_wunsch(seq1, seq2, match=1, mismatch=-1, gap=-1):
     m, n = len(seq1), len(seq2)
     dp = [[0] * (n + 1) for _ in range(m + 1)]
