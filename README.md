@@ -1,9 +1,22 @@
 # 生物信息算法
 
 ## 一、序列比对算法
-RUST-BIO-TYPES
+序列比对算法是生物信息学中的一种重要工具，用于比较DNA、RNA或蛋白质序列，以找出它们之间的相似性和差异性。这些算法在基因组研究、进化生物学、功能预测等领域具有广泛应用。以下是几种常见的序列比对算法及其介绍：
 
-1. 全局比对(Global)
+### 1. 全局比对(Global)
+全局比对算法用于将两条序列从头到尾进行比对，适用于长度相近且整体相似的序列。
+
+
+
+Needleman-Wunsch算法
+
+- 这是最著名的全局比对算法，基于动态规划。
+- 通过构建一个矩阵来记录比对过程中的得分。
+- 逐步填充矩阵，每个单元格的得分基于前一个单元格的值，考虑匹配、错配和插入/删除（gap）得分。
+- 最终从矩阵的右下角回溯，得到最优比对路径。
+
+#### 示例
+
 ```
 序列A: ATCG--AT
 序列B: ATCGCCAT
@@ -13,8 +26,74 @@ RUST-BIO-TYPES
 - 适用于长度相近且相似度高的序列
 - 例如:比对同源基因或蛋白质序列
 
-2. 半全局比对(Semiglobal)
+#### 算法实现
 
+##### Needleman-Wunsch算法
+- 这是最著名的全局比对算法，基于动态规划。
+- 通过构建一个矩阵来记录比对过程中的得分。
+- 逐步填充矩阵，每个单元格的得分基于前一个单元格的值，考虑匹配、错配和插入/删除（gap）得分。
+- 最终从矩阵的右下角回溯，得到最优比对路径。
+
+##### 代码实现
+
+```
+def needleman_wunsch(seq1, seq2, match=1, mismatch=-1, gap=-1):
+    m, n = len(seq1), len(seq2)
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+
+    for i in range(m + 1):
+        dp[i][0] = i * gap
+    for j in range(n + 1):
+        dp[0][j] = j * gap
+
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            match_score = dp[i - 1][j - 1] + (match if seq1[i - 1] == seq2[j - 1] else mismatch)
+            delete = dp[i - 1][j] + gap
+            insert = dp[i][j - 1] + gap
+            dp[i][j] = max(match_score, delete, insert)
+
+    align1, align2 = '', ''
+    i, j = m, n
+    while i > 0 and j > 0:
+        current_score = dp[i][j]
+        if current_score == dp[i - 1][j - 1] + (match if seq1[i - 1] == seq2[j - 1] else mismatch):
+            align1 = seq1[i - 1] + align1
+            align2 = seq2[j - 1] + align2
+            i -= 1
+            j -= 1
+        elif current_score == dp[i - 1][j] + gap:
+            align1 = seq1[i - 1] + align1
+            align2 = '-' + align2
+            i -= 1
+        else:
+            align1 = '-' + align1
+            align2 = seq2[j - 1] + align2
+            j -= 1
+
+    while i > 0:
+        align1 = seq1[i - 1] + align1
+        align2 = '-' + align2
+        i -= 1
+    while j > 0:
+        align1 = '-' + align1
+        align2 = seq2[j - 1] + align2
+        j -= 1
+
+    return align1, align2
+
+# 示例使用
+seq1 = "GATTACA"
+seq2 = "GCATGCU"
+align1, align2 = needleman_wunsch(seq1, seq2)
+print(align1)
+print(align2)
+```
+
+### 2. 半全局比对(Semiglobal)
+半全局比对（Semi-global Alignment）是序列比对的一种变体，介于全局比对和局部比对之间。它允许在序列的一端或两端添加gap，而不对比对得分产生负面影响。这种比对方式适用于当我们希望比对两条序列的某一部分，而不关心它们的端部的情况。
+
+#### 示例
 ```
 序列A:   TCGAT
 序列B: ATCGATT
@@ -24,7 +103,80 @@ RUST-BIO-TYPES
 - 适用于一个序列是另一个序列的子序列的情况
 - 例如:短读序列与参考基因组的比对
 
-3. 局部比对(Local)
+#### 算法实现
+
+半全局比对通常使用动态规划实现，类似于Needleman-Wunsch和Smith-Waterman算法，但在初始化和回溯步骤上有所不同。
+
+##### 算法描述
+
+- 初始化：第一行和第一列的初始化为0，表示在这些位置可以自由对齐，不计算gap得分。
+- 填充动态规划矩阵：使用动态规划填充矩阵，每个单元格的值取决于匹配得分、删除得分和插入得分的最大值。
+- 回溯：从矩阵的最后一行（而不是右下角）开始回溯，以找到最优比对路径。
+- 补齐剩余部分：补齐比对过程中未比对的部分，将其填充为gap。
+
+##### 代码实现
+
+```
+def semi_global_alignment(seq1, seq2, match=1, mismatch=-1, gap=-1):
+    m, n = len(seq1), len(seq2)
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+    
+    # 初始化第一行和第一列
+    for i in range(1, m + 1):
+        dp[i][0] = 0  # 可以自由对齐，不计算gap得分
+    for j in range(1, n + 1):
+        dp[0][j] = 0  # 可以自由对齐，不计算gap得分
+
+    # 填充动态规划矩阵
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            match_score = dp[i - 1][j - 1] + (match if seq1[i - 1] == seq2[j - 1] else mismatch)
+            delete = dp[i - 1][j] + gap
+            insert = dp[i][j - 1] + gap
+            dp[i][j] = max(match_score, delete, insert)
+
+    # 找到最优比对的终点
+    max_i, max_j = m, max(range(n + 1), key=lambda j: dp[m][j])  # 在最后一行找最大值
+
+    # 回溯以构建比对
+    align1, align2 = '', ''
+    i, j = max_i, max_j
+    while i > 0 and j > 0:
+        current_score = dp[i][j]
+        if current_score == dp[i - 1][j - 1] + (match if seq1[i - 1] == seq2[j - 1] else mismatch):
+            align1 = seq1[i - 1] + align1
+            align2 = seq2[j - 1] + align2
+            i -= 1
+            j -= 1
+        elif current_score == dp[i - 1][j] + gap:
+            align1 = seq1[i - 1] + align1
+            align2 = '-' + align2
+            i -= 1
+        else:
+            align1 = '-' + align1
+            align2 = seq2[j - 1] + align2
+            j -= 1
+
+    # 补齐剩余部分
+    while j > 0:
+        align1 = '-' + align1
+        align2 = seq2[j - 1] + align2
+        j -= 1
+
+    return align1, align2
+
+# 示例使用
+seq1 = "GATTACA"
+seq2 = "TACG"
+align1, align2 = semi_global_alignment(seq1, seq2)
+print(align1)
+print(align2)
+```
+
+### 3. 局部比对(Local)
+局部比对算法用于找出两条序列中最相似的片段，适用于长度不等且部分相似的序列。
+
+#### 示例
 
 ```
 序列A: AAATCGAAA
@@ -36,6 +188,61 @@ RUST-BIO-TYPES
 - 适用于序列中包含保守区域的情况
 - 例如:寻找motif或功能域
 
+#### 算法实现
+
+##### 算法描述
+Smith-Waterman算法
+- 这是最著名的局部比对算法，同样基于动态规划。
+- 构建一个矩阵，但只记录正得分，并在得分为负时重置为零。
+- 通过找到矩阵中的最高得分位置，从该位置回溯，得到局部比对。
+
+##### 代码实现
+
+```
+def smith_waterman(seq1, seq2, match=2, mismatch=-1, gap=-1):
+    m, n = len(seq1), len(seq2)
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+    max_score = 0
+    max_pos = None
+
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            match_score = dp[i - 1][j - 1] + (match if seq1[i - 1] == seq2[j - 1] else mismatch)
+            delete = dp[i - 1][j] + gap
+            insert = dp[i][j - 1] + gap
+            dp[i][j] = max(0, match_score, delete, insert)
+
+            if dp[i][j] > max_score:
+                max_score = dp[i][j]
+                max_pos = (i, j)
+
+    align1, align2 = '', ''
+    i, j = max_pos
+    while dp[i][j] > 0:
+        current_score = dp[i][j]
+        if current_score == dp[i - 1][j - 1] + (match if seq1[i - 1] == seq2[j - 1] else mismatch):
+            align1 = seq1[i - 1] + align1
+            align2 = seq2[j - 1] + align2
+            i -= 1
+            j -= 1
+        elif current_score == dp[i - 1][j] + gap:
+            align1 = seq1[i - 1] + align1
+            align2 = '-' + align2
+            i -= 1
+        else:
+            align1 = '-' + align1
+            align2 = seq2[j - 1] + align2
+            j -= 1
+
+    return align1, align2
+
+# 示例使用
+seq1 = "GATTACA"
+seq2 = "GCATGCU"
+align1, align2 = smith_waterman(seq1, seq2)
+print(align1)
+print(align2)
+```
 
 ## 二、基因组装算法
 
