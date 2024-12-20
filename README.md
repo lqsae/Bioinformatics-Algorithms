@@ -116,7 +116,7 @@ print(align2)
 
 ##### 代码实现
 
-```
+```python
 def semi_global_alignment(seq1, seq2, match=1, mismatch=-1, gap=-1):
     m, n = len(seq1), len(seq2)
     dp = [[0] * (n + 1) for _ in range(m + 1)]
@@ -198,7 +198,7 @@ Smith-Waterman算法
 
 ##### 代码实现
 
-```
+```python
 def smith_waterman(seq1, seq2, match=2, mismatch=-1, gap=-1):
     m, n = len(seq1), len(seq2)
     dp = [[0] * (n + 1) for _ in range(m + 1)]
@@ -295,7 +295,7 @@ Edges: [Read 1 -> Read 2 (重叠部分: CGTAC)]
 
 #### 算法实现
 
-```
+```python
 from collections import defaultdict
 
 def find_overlaps(reads, min_overlap=3):
@@ -344,11 +344,6 @@ de Bruijn图算法是基因组组装中常用的一种方法，特别适用于�
 
 #### 步骤
 
-
-
-
-
-
 ##### 1. 构建k-mers：
 将所有读段分割成长度为k的子序列（k-mers）。每个读段会产生多个k-mers。例如，对一个读段ACGTGCA，如果k=3，则产生的k-mers为ACG，CGT，GTG，TGC，GCA。
 
@@ -391,7 +386,7 @@ Edges: ACG -> CGT, CGT -> GTG, GTG -> TGC, TGC -> GCA
 ```
 
 #### 算法实现
-```
+```python
 from collections import defaultdict, deque
 
 def build_de_bruijn_graph(kmers):
